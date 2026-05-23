@@ -1,51 +1,63 @@
 pipeline {
     agent any
     
-    environment {
-        APP_ENV = 'Staging'
-        APP_VERSION = '1.3.0-RC'
+    tools {
+        terraform 'terraform-1.x'
     }
     
     stages {
-        stage('Initialize & Lint') {
+        // --- STAGING LIFECYCLE STAGES ---
+        stage('Staging: Initialize') {
             steps {
-                echo "Starting pipeline execution for Environment: ${env.APP_ENV}"
-                echo "Target Application Version: ${env.APP_VERSION}"
+                dir('lab4/environments/staging') {
+                    sh 'terraform init'
+                }
             }
         }
         
-        stage('Build & Package') {
+        stage('Staging: Validate & Apply') {
             steps {
-                echo "Compiling code dependencies..."
-                // Simulate packaging artifact
-                writeFile file: 'build_status.txt', text: "Version ${env.APP_VERSION} built successfully."
+                dir('lab4/environments/staging') {
+                    echo "Deploying infrastructure adjustments to Staging environment..."
+                    sh 'terraform plan -out=stgplan'
+                    sh 'terraform apply -input=false stgplan'
+                }
             }
         }
         
-        stage('Security & Test Execution') {
-            environment {
-                // Binding the credential securely to an environment variable scoped only to this stage
-                MY_SECRET_KEY = credentials('api-token-assignment')
-            }
+        // --- ENTERPRISE MANUAL PROMOTION GATEWAY ---
+        stage('Production Promotion Gate') {
             steps {
-                echo "Running unit and mock integration testing suites..."
-                // TVET Practical checkpoint: Observe log masking
-                echo "Validating authentication token status..."
-                echo "The active system key is: ${MY_SECRET_KEY}" 
+                echo "Staging checks completed successfully."
+                input message: "Promote infrastructure alterations directly into the LIVE Production Environment?", 
+                      ok: "Approve Production Release"
+            }
+        }
+        
+        // --- PRODUCTION LIFECYCLE STAGES ---
+        stage('Production: Initialize') {
+            steps {
+                dir('lab4/environments/production') {
+                    sh 'terraform init'
+                }
+            }
+        }
+        
+        stage('Production: Secure Apply') {
+            steps {
+                dir('lab4/environments/production') {
+                    echo "Executing production mutations..."
+                    sh 'terraform plan -out=prodplan'
+                    sh 'terraform apply -input=false prodplan'
+                }
             }
         }
     }
     
     post {
         always {
-            echo "Archiving operational build results..."
-            archiveArtifacts artifacts: 'build_status.txt', fingerprint: true
-        }
-        success {
-            echo "Pipeline complete. Notification sent to development team."
-        }
-        failure {
-            echo "Alert! Pipeline failed at runtime. Check configurations."
+            echo "Archiving operational multi-stage telemetry..."
+            archiveArtifacts artifacts: 'environments/**/*.txt', allowEmptyArchive: true
         }
     }
 }
