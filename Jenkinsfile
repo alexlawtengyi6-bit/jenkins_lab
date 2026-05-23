@@ -12,7 +12,7 @@ pipeline {
         stage('Staging: Initialize') {
             steps {
                 dir('lab4/environments/staging') {
-                    sh 'terraform init'
+                    bat 'terraform init'
                 }
             }
         }
@@ -21,8 +21,8 @@ pipeline {
             steps {
                 dir('lab4/environments/staging') {
                     echo "Deploying infrastructure adjustments to Staging environment..."
-                    sh 'terraform plan -out=stgplan'
-                    sh 'terraform apply -input=false stgplan'
+                    bat 'terraform plan -out=stgplan'
+                    bat 'terraform apply -input=false stgplan'
                 }
             }
         }
@@ -40,7 +40,7 @@ pipeline {
         stage('Production: Initialize') {
             steps {
                 dir('lab4/environments/production') {
-                    sh 'terraform init'
+                    bat 'terraform init'
                 }
             }
         }
@@ -49,8 +49,8 @@ pipeline {
             steps {
                 dir('lab4/environments/production') {
                     echo "Executing production mutations..."
-                    sh 'terraform plan -out=prodplan'
-                    sh 'terraform apply -input=false prodplan'
+                    bat 'terraform plan -out=prodplan'
+                    bat 'terraform apply -input=false prodplan'
                 }
             }
         }
