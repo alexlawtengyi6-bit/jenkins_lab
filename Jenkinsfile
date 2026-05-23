@@ -1,9 +1,11 @@
 pipeline {
     agent any
     
+    /*
     tools {
         terraform 'terraform-1.x'
     }
+    */
     
     stages {
         // --- STAGING LIFECYCLE STAGES ---
